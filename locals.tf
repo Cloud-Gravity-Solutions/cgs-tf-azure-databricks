@@ -1,5 +1,7 @@
 locals {
-  existing_databricks_service = "dbw-dlh-prod-westeu-001"
+  existing_databricks_service = "test-marko"
+
+  cluster_ids_list = tolist(data.databricks_clusters.all.ids)
 
   naming_convetions = {
     westeurope  = "westeu"
