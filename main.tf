@@ -33,6 +33,57 @@ resource "databricks_job" "new_jobs" {
   control_run_state = try(data.databricks_job.existing_job[count.index].job_settings[count.index].settings[count.index].control_run_state, null)
   timeout_seconds   = try(data.databricks_job.existing_job[count.index].job_settings[count.index].settings[count.index].timeout_seconds, null)
 
+  dynamic "schedule" {
+    for_each = try(data.databricks_job.existing_job[count.index].job_settings[count.index].settings[count.index].schedule, [])
+
+    content {
+      quartz_cron_expression = lookup(schedule.value, "quartz_cron_expression", null)
+      timezone_id            = lookup(schedule.value, "timezone_id", null)
+      pause_status           = lookup(schedule.value, "pause_status", null)
+    }
+  }
+
+  dynamic "queue" {
+    for_each = try(data.databricks_job.existing_job[count.index].job_settings[count.index].settings[count.index].queue, [])
+
+    content {
+      enabled = lookup(queue.value, "enabled", null)
+    }
+  }
+
+  dynamic "trigger" {
+    for_each = try(data.databricks_job.existing_job[count.index].job_settings[count.index].settings[count.index].trigger, [])
+
+    content {
+      pause_status = lookup(trigger.value, "pause_status", null)
+
+      dynamic "file_arrival" {
+
+        for_each = lookup(trigger.value, "file_arrival", null)
+
+        content {
+          url                               = lookup(file_arrival.value, "url", null)
+          min_time_between_triggers_seconds = lookup(file_arrival.value, "min_time_between_triggers_seconds", null)
+          wait_after_last_change_seconds    = lookup(file_arrival.value, "wait_after_last_change_seconds", null)
+        }
+      }
+    }
+  }
+
+
+  dynamic "git_source" {
+    for_each = try(data.databricks_job.existing_job[count.index].job_settings[count.index].settings[count.index].git_source, [])
+
+    content {
+      url      = lookup(git_source.value, "url", null)
+      provider = lookup(git_source.value, "provider", null)
+      branch   = lookup(git_source.value, "branch", null)
+      tag      = lookup(git_source.value, "tag", null)
+      commit   = lookup(git_source.value, "commit", null)
+    }
+  }
+
+
   dynamic "parameter" {
     for_each = try(data.databricks_job.existing_job[count.index].job_settings[count.index].settings[count.index].parameter, [])
 
@@ -78,6 +129,16 @@ resource "databricks_job" "new_jobs" {
       max_retries               = lookup(task.value, "max_retries", null)
       min_retry_interval_millis = lookup(task.value, "min_retry_interval_millis", null)
       timeout_seconds           = lookup(task.value, "timeout_seconds", null)
+
+      dynamic "notification_settings" {
+        for_each = lookup(task.value, "notification_settings", null)
+
+        content {
+          no_alert_for_canceled_runs = lookup(notification_settings.value, "no_alert_for_canceled_runs", null)
+          no_alert_for_skipped_runs  = lookup(notification_settings.value, "no_alert_for_skipped_runs", null)
+          alert_on_last_attempt      = lookup(notification_settings.value, "alert_on_last_attempt", null)
+        }
+      }
 
       dynamic "email_notifications" {
         for_each = lookup(task.value, "email_notifications", null)
