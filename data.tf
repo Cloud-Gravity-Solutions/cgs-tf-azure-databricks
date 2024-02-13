@@ -11,7 +11,7 @@ terraform {
 data "databricks_clusters" "all" {}
 
 data "databricks_cluster" "existing_cluster" {
-  count      = length(local.cluster_ids_list) 
+  count      = length(local.cluster_ids_list)
   cluster_id = local.cluster_ids_list[count.index]
 }
 
@@ -20,7 +20,7 @@ data "databricks_cluster" "existing_cluster" {
 data "databricks_jobs" "existing_jobs" {}
 
 data "databricks_job" "existing_job" {
-  count = length(keys(data.databricks_jobs.existing_jobs.ids))
+  count  = length(keys(data.databricks_jobs.existing_jobs.ids))
   job_id = values(data.databricks_jobs.existing_jobs.ids)[count.index]
 }
 
@@ -57,5 +57,5 @@ data "databricks_notebook" "existing_notebooks" {
 
 data "databricks_directory" "existing_folders" {
   count = length(var.existing_databricks_folders)
-  path  = join("/",["",var.existing_databricks_folders[count.index]])
+  path  = join("/", ["", var.existing_databricks_folders[count.index]])
 }
