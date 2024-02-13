@@ -2,22 +2,22 @@
 
 resource "databricks_cluster" "new_cluster" {
   count                        = length(local.cluster_ids_list)
-  cluster_name                 = try(data.databricks_cluster.existing_cluster[count.index].cluster_info[count.index].cluster_name, null)
-  spark_version                = try(data.databricks_cluster.existing_cluster[count.index].cluster_info[count.index].spark_version, null)
-  node_type_id                 = try(data.databricks_cluster.existing_cluster[count.index].cluster_info[count.index].node_type_id, null)
-  runtime_engine               = try(data.databricks_cluster.existing_cluster[count.index].cluster_info[count.index].runtime_engine, null)
-  instance_pool_id             = can(data.databricks_cluster.existing_cluster[count.index].cluster_info[count.index].node_type_id) ? null : try(data.databricks_cluster.existing_cluster[count.index].cluster_info[count.index].instance_pool_id, null)
-  policy_id                    = try(data.databricks_cluster.existing_cluster[count.index].cluster_info[count.index].policy_id, null)
-  autotermination_minutes      = try(data.databricks_cluster.existing_cluster[count.index].cluster_info[count.index].autotermination_minutes, null)
-  enable_elastic_disk          = try(data.databricks_cluster.existing_cluster[count.index].cluster_info[count.index].enable_elastic_disk, null)
-  enable_local_disk_encryption = try(data.databricks_cluster.existing_cluster[count.index].cluster_info[count.index].enable_local_disk_encryption, null)
-  data_security_mode           = try(data.databricks_cluster.existing_cluster[count.index].cluster_info[count.index].data_security_mode, null)
-  single_user_name             = try(data.databricks_cluster.existing_cluster[count.index].cluster_info[count.index].single_user_name, null)
-  idempotency_token            = try(data.databricks_cluster.existing_cluster[count.index].cluster_info[count.index].idempotency_token, null)
-  ssh_public_keys              = try(data.databricks_cluster.existing_cluster[count.index].cluster_info[count.index].ssh_public_keys, null)
-  spark_env_vars               = try(data.databricks_cluster.existing_cluster[count.index].cluster_info[count.index].spark_env_vars, null)
-  spark_conf                   = try(data.databricks_cluster.existing_cluster[count.index].cluster_info[count.index].spark_conf, null)
-  custom_tags                  = try(data.databricks_cluster.existing_cluster[count.index].cluster_info[count.index].custom_tags, null)
+  cluster_name                 = join("", [count.index, data.databricks_cluster.existing_cluster[count.index].cluster_info[0].cluster_name])
+  spark_version                = data.databricks_cluster.existing_cluster[count.index].cluster_info[0].spark_version
+  node_type_id                 = try(data.databricks_cluster.existing_cluster[count.index].cluster_info[0].node_type_id, null)
+  runtime_engine               = try(data.databricks_cluster.existing_cluster[count.index].cluster_info[0].runtime_engine, null)
+  instance_pool_id             = can(data.databricks_cluster.existing_cluster[count.index].cluster_info[0].node_type_id) ? null : try(data.databricks_cluster.existing_cluster[count.index].cluster_info[0].instance_pool_id, null)
+  policy_id                    = try(data.databricks_cluster.existing_cluster[count.index].cluster_info[0].policy_id, null)
+  autotermination_minutes      = try(data.databricks_cluster.existing_cluster[count.index].cluster_info[0].autotermination_minutes, null)
+  enable_elastic_disk          = try(data.databricks_cluster.existing_cluster[count.index].cluster_info[0].enable_elastic_disk, null)
+  enable_local_disk_encryption = try(data.databricks_cluster.existing_cluster[count.index].cluster_info[0].enable_local_disk_encryption, null)
+  data_security_mode           = try(data.databricks_cluster.existing_cluster[count.index].cluster_info[0].data_security_mode, null)
+  single_user_name             = try(data.databricks_cluster.existing_cluster[count.index].cluster_info[0].single_user_name, null)
+  idempotency_token            = try(data.databricks_cluster.existing_cluster[count.index].cluster_info[0].idempotency_token, null)
+  ssh_public_keys              = try(data.databricks_cluster.existing_cluster[count.index].cluster_info[0].ssh_public_keys, null)
+  spark_env_vars               = try(data.databricks_cluster.existing_cluster[count.index].cluster_info[0].spark_env_vars, null)
+  spark_conf                   = try(data.databricks_cluster.existing_cluster[count.index].cluster_info[0].spark_conf, null)
+  custom_tags                  = try(data.databricks_cluster.existing_cluster[count.index].cluster_info[0].custom_tags, null)
 
   autoscale {
     min_workers = try(lookup(var.databricks_cluster_autoscale, "min_workers", null), null)
@@ -294,4 +294,44 @@ resource "databricks_job" "new_jobs" {
     }
   }
 }
+
+# Azure Databricks Instance Pools that will be replicated
+
+resource "databricks_instance_pool" "new_instance_pools" {
+  count                                 = length(var.existing_instance_pools)
+  instance_pool_name                    = join("-", [count.index, "ip"])
+  idle_instance_autotermination_minutes = data.databricks_instance_pool.existing_pools[count.index].pool_info[0].idle_instance_autotermination_minutes
+  node_type_id                          = data.databricks_instance_pool.existing_pools[count.index].pool_info[0].node_type_id
+  min_idle_instances                    = try(data.databricks_instance_pool.existing_pools[count.index].pool_info[0].min_idle_instances)
+  max_capacity                          = try(data.databricks_instance_pool.existing_pools[count.index].pool_info[0].max_capacity)
+  enable_elastic_disk                   = try(data.databricks_instance_pool.existing_pools[count.index].pool_info[0].enable_elastic_disk)
+  preloaded_spark_versions              = try(data.databricks_instance_pool.existing_pools[count.index].pool_info[0].preloaded_spark_versions)
+
+  dynamic "disk_spec" {
+    for_each = try(data.databricks_instance_pool.existing_pools[count.index].pool_info[0].disk_spec, [])
+
+    content {
+      disk_count = lookup(disk_spec.value, "disk_count", null)
+      disk_size  = lookup(disk_spec.value, "disk_size", null)
+
+      dynamic "disk_type" {
+        for_each = lookup(disk_spec.value, "disk_type", [])
+
+        content {
+          ebs_volume_type        = lookup(disk_type.value, "ebs_volume_type", null)
+          azure_disk_volume_type = lookup(disk_type.value, "azure_disk_volume_type", null)
+        }
+      }
+    }
+  }
+
+  dynamic "preloaded_docker_image" {
+    for_each = try(data.databricks_instance_pool.existing_pools[count.index].pool_info[0].preloaded_docker_image, [])
+
+    content {
+      url = lookup()
+    }
+  }
+}
+
 
