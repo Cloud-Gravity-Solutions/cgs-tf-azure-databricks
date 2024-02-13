@@ -29,12 +29,187 @@ resource "databricks_cluster" "new_cluster" {
 
 resource "databricks_job" "new_jobs" {
   count             = length(data.databricks_jobs.existing_jobs.ids)
-  name              = data.databricks_job.existing_job[count.index].name
-  control_run_state = try(data.databricks_job.existing_job[count.index].job_settings[count.index].settings[count.index].control_run_state, null)
-  timeout_seconds   = try(data.databricks_job.existing_job[count.index].job_settings[count.index].settings[count.index].timeout_seconds, null)
+  name              = join("-", [count.index, "job"])
+  control_run_state = try(data.databricks_job.existing_job[count.index].job_settings[0].settings[0].control_run_state, null)
+  timeout_seconds   = try(data.databricks_job.existing_job[count.index].job_settings[0].settings[0].timeout_seconds, 15)
+
+  dynamic "task" {
+    for_each = data.databricks_job.existing_job[count.index].job_settings[0].settings[0].task
+    content {
+      task_key                  = lookup(task.value, "task_key", null)
+      run_if                    = lookup(task.value, "run_if", null)
+      retry_on_timeout          = lookup(task.value, "retry_on_timeout", null)
+      max_retries               = lookup(task.value, "max_retries", null)
+      min_retry_interval_millis = lookup(task.value, "min_retry_interval_millis", null)
+      timeout_seconds           = lookup(task.value, "timeout_seconds", null)
+      existing_cluster_id       = lookup(task.value, "existing_cluster_id", null)
+
+      dynamic "notification_settings" {
+        for_each = lookup(task.value, "notification_settings", [])
+
+        content {
+          no_alert_for_canceled_runs = lookup(notification_settings.value, "no_alert_for_canceled_runs", null)
+          no_alert_for_skipped_runs  = lookup(notification_settings.value, "no_alert_for_skipped_runs", null)
+          alert_on_last_attempt      = lookup(notification_settings.value, "alert_on_last_attempt", null)
+        }
+      }
+
+      dynamic "email_notifications" {
+        for_each = lookup(task.value, "email_notifications", [])
+
+        content {
+          on_start                               = lookup(email_notifications.value, "on_start", null)
+          on_success                             = lookup(email_notifications.value, "on_success", null)
+          on_failure                             = lookup(email_notifications.value, "on_failure", null)
+          on_duration_warning_threshold_exceeded = lookup(email_notifications.value, "on_duration_warning_threshold_exceeded", null)
+        }
+      }
+
+      dynamic "pipeline_task" {
+        for_each = lookup(task.value, "pipeline_task", [])
+
+        content {
+          pipeline_id = lookup(pipeline_task.value, "pipeline_id", null)
+        }
+      }
+
+      dynamic "spark_jar_task" {
+        for_each = lookup(task.value, "spark_jar_task", [])
+
+        content {
+          parameters      = lookup(spark_jar_task.value, "parameters", null)
+          main_class_name = lookup(spark_jar_task.value, "main_class_name", null)
+        }
+      }
+      dynamic "condition_task" {
+        for_each = lookup(task.value, "condition_task", [])
+
+        content {
+          left  = lookup(condition_task.value, "left", null)
+          right = lookup(condition_task.value, "right", null)
+          op    = lookup(condition_task.value, "op", null)
+        }
+      }
+      dynamic "spark_submit_task" {
+        for_each = lookup(task.value, "spark_submit_task", [])
+
+        content {
+          parameters = lookup(spark_submit_task.value, "parameters", null)
+        }
+      }
+      dynamic "spark_python_task" {
+        for_each = lookup(task.value, "spark_python_task", [])
+
+        content {
+          python_file = lookup(spark_python_task.value, "python_file", null)
+          source      = lookup(spark_python_task.value, "source", null)
+          parameters  = lookup(spark_python_task.value, "parameters", null)
+        }
+      }
+      dynamic "notebook_task" {
+        for_each = lookup(task.value, "notebook_task", [])
+
+        content {
+          notebook_path   = lookup(notebook_task.value, "notebook_path", null)
+          source          = lookup(notebook_task.value, "source", null)
+          base_parameters = lookup(notebook_task.value, "base_parameters", null)
+        }
+      }
+
+      dynamic "python_wheel_task" {
+        for_each = lookup(task.value, "python_wheel_task", [])
+
+        content {
+          entry_point      = lookup(python_wheel_task.value, "entry_point", null)
+          package_name     = lookup(python_wheel_task.value, "package_name", null)
+          parameters       = lookup(python_wheel_task.value, "parameters", null)
+          named_parameters = lookup(python_wheel_task.value, "named_parameters", null)
+        }
+      }
+
+      dynamic "dbt_task" {
+        for_each = lookup(task.value, "dbt_task", [])
+
+        content {
+          commands           = lookup(dbt_task.value, "commands", null)
+          project_directory  = lookup(dbt_task.value, "project_directory", null)
+          profiles_directory = lookup(dbt_task.value, "profiles_directory", null)
+          catalog            = lookup(dbt_task.value, "catalog", null)
+          schema             = lookup(dbt_task.value, "schema", null)
+          warehouse_id       = lookup(dbt_task.value, "warehouse_id", null)
+        }
+      }
+      dynamic "run_job_task" {
+        for_each = lookup(task.value, "run_job_task", [])
+
+        content {
+          job_id         = lookup(run_job_task.value, "job_id", null)
+          job_parameters = lookup(run_job_task.value, "job_parameters", null)
+        }
+      }
+
+      dynamic "sql_task" {
+        for_each = lookup(task.value, "sql_task", [])
+
+        content {
+          warehouse_id = lookup(sql_task.value, "warehouse_id", null)
+          parameters   = lookup(sql_task.value, "parameters", null)
+
+          dynamic "query" {
+            for_each = lookup(sql_task.value, "query", [])
+            content {
+              query_id = lookup(query.value, "query_id", null)
+            }
+          }
+          dynamic "dashboard" {
+            for_each = lookup(sql_task.value, "dashboard", [])
+
+            content {
+              dashboard_id        = lookup(dashboard.value, "dashboard_id", null)
+              custom_subject      = lookup(dashboard.value, "custom_subject", null)
+              pause_subscriptions = lookup(dashboard.value, "pause_subscriptions", null)
+
+              dynamic "subscriptions" {
+                for_each = lookup(dashboard.value, "subscriptions", [])
+
+                content {
+                  user_name      = lookup(subscriptions.value, "user_name", null)
+                  destination_id = lookup(subscriptions.value, "destination_id", null)
+                }
+              }
+            }
+          }
+          dynamic "alert" {
+            for_each = lookup(sql_task.value, "alert", [])
+
+            content {
+              alert_id            = lookup(alert.value, "alert_id", null)
+              pause_subscriptions = lookup(alert.value, "pause_subscriptions", null)
+
+              dynamic "subscriptions" {
+                for_each = lookup(alert.value, "subscriptions", [])
+
+                content {
+                  user_name      = lookup(subscriptions.value, "user_name", null)
+                  destination_id = lookup(subscriptions.value, "destination_id", null)
+                }
+              }
+            }
+          }
+          dynamic "file" {
+            for_each = lookup(sql_task.value, "file", [])
+
+            content {
+              path = lookup(file.value, "path", null)
+            }
+          }
+        }
+      }
+    }
+  }
 
   dynamic "schedule" {
-    for_each = try(data.databricks_job.existing_job[count.index].job_settings[count.index].settings[count.index].schedule, [])
+    for_each = try(data.databricks_job.existing_job[count.index].job_settings[0].settings[0].schedule, [])
 
     content {
       quartz_cron_expression = lookup(schedule.value, "quartz_cron_expression", null)
@@ -44,7 +219,7 @@ resource "databricks_job" "new_jobs" {
   }
 
   dynamic "queue" {
-    for_each = try(data.databricks_job.existing_job[count.index].job_settings[count.index].settings[count.index].queue, [])
+    for_each = try(data.databricks_job.existing_job[count.index].job_settings[0].settings[0].queue, [])
 
     content {
       enabled = lookup(queue.value, "enabled", null)
@@ -52,14 +227,14 @@ resource "databricks_job" "new_jobs" {
   }
 
   dynamic "trigger" {
-    for_each = try(data.databricks_job.existing_job[count.index].job_settings[count.index].settings[count.index].trigger, [])
+    for_each = try(data.databricks_job.existing_job[count.index].job_settings[0].settings[0].trigger, [])
 
     content {
       pause_status = lookup(trigger.value, "pause_status", null)
 
       dynamic "file_arrival" {
 
-        for_each = lookup(trigger.value, "file_arrival", null)
+        for_each = lookup(trigger.value, "file_arrival", [])
 
         content {
           url                               = lookup(file_arrival.value, "url", null)
@@ -72,7 +247,7 @@ resource "databricks_job" "new_jobs" {
 
 
   dynamic "git_source" {
-    for_each = try(data.databricks_job.existing_job[count.index].job_settings[count.index].settings[count.index].git_source, [])
+    for_each = try(data.databricks_job.existing_job[count.index].job_settings[0].settings[0].git_source, [])
 
     content {
       url      = lookup(git_source.value, "url", null)
@@ -85,7 +260,7 @@ resource "databricks_job" "new_jobs" {
 
 
   dynamic "parameter" {
-    for_each = try(data.databricks_job.existing_job[count.index].job_settings[count.index].settings[count.index].parameter, [])
+    for_each = try(data.databricks_job.existing_job[count.index].job_settings[0].settings[0].parameter, [])
 
     content {
       name    = lookup(parameter.value, "name", null)
@@ -94,7 +269,7 @@ resource "databricks_job" "new_jobs" {
   }
 
   dynamic "notification_settings" {
-    for_each = try(data.databricks_job.existing_job[count.index].job_settings[count.index].settings[count.index].notification_settings, [])
+    for_each = try(data.databricks_job.existing_job[count.index].job_settings[0].settings[0].notification_settings, [])
 
     content {
       no_alert_for_skipped_runs  = lookup(notification_settings.value, "no_alert_for_skipped_runs", null)
@@ -103,7 +278,7 @@ resource "databricks_job" "new_jobs" {
 
   }
   dynamic "job_cluster" {
-    for_each = try(data.databricks_job.existing_job[count.index].job_settings[count.index].settings[count.index].job_cluster, [])
+    for_each = try(data.databricks_job.existing_job[count.index].job_settings[0].settings[0].job_cluster, [])
     content {
       job_cluster_key = lookup(job_cluster.value, "job_cluster_key", null)
 
@@ -114,181 +289,6 @@ resource "databricks_job" "new_jobs" {
           spark_version  = lookup(new_cluster.value, "spark_version", null)
           spark_env_vars = lookup(new_cluster.value, "spark_env_vars", null)
           spark_conf     = lookup(new_cluster.value, "spark_conf", null)
-        }
-      }
-    }
-  }
-
-  dynamic "task" {
-    for_each = try(data.databricks_job.existing_job[count.index].job_settings[count.index].settings[count.index].task, [])
-
-    content {
-      task_key                  = lookup(task.value, "task_key", null)
-      run_if                    = lookup(task.value, "run_if", null)
-      retry_on_timeout          = lookup(task.value, "retry_on_timeout", null)
-      max_retries               = lookup(task.value, "max_retries", null)
-      min_retry_interval_millis = lookup(task.value, "min_retry_interval_millis", null)
-      timeout_seconds           = lookup(task.value, "timeout_seconds", null)
-
-      dynamic "notification_settings" {
-        for_each = lookup(task.value, "notification_settings", null)
-
-        content {
-          no_alert_for_canceled_runs = lookup(notification_settings.value, "no_alert_for_canceled_runs", null)
-          no_alert_for_skipped_runs  = lookup(notification_settings.value, "no_alert_for_skipped_runs", null)
-          alert_on_last_attempt      = lookup(notification_settings.value, "alert_on_last_attempt", null)
-        }
-      }
-
-      dynamic "email_notifications" {
-        for_each = lookup(task.value, "email_notifications", null)
-
-        content {
-          on_start                               = lookup(email_notifications.value, "on_start", null)
-          on_success                             = lookup(email_notifications.value, "on_success", null)
-          on_failure                             = lookup(email_notifications.value, "on_failure", null)
-          on_duration_warning_threshold_exceeded = lookup(email_notifications.value, "on_duration_warning_threshold_exceeded", null)
-        }
-      }
-
-      dynamic "pipeline_task" {
-        for_each = lookup(task.value, "pipeline_task", null)
-
-        content {
-          pipeline_id = lookup(pipeline_task.value, "pipeline_id", null)
-        }
-      }
-
-      dynamic "spark_jar_task" {
-        for_each = lookup(task.value, "spark_jar_task", null)
-
-        content {
-          parameters      = lookup(spark_jar_task.value, "parameters", null)
-          main_class_name = lookup(spark_jar_task.value, "main_class_name", null)
-        }
-      }
-      dynamic "condition_task" {
-        for_each = lookup(task.value, "condition_task", null)
-
-        content {
-          left  = lookup(condition_task.value, "left", null)
-          right = lookup(condition_task.value, "right", null)
-          op    = lookup(condition_task.value, "op", null)
-        }
-      }
-      dynamic "spark_submit_task" {
-        for_each = lookup(task.value, "spark_submit_task", null)
-
-        content {
-          parameters = lookup(spark_submit_task.value, "parameters", null)
-        }
-      }
-      dynamic "spark_python_task" {
-        for_each = lookup(task.value, "spark_python_task", null)
-
-        content {
-          python_file = lookup(spark_python_task.value, "python_file", null)
-          source      = lookup(spark_python_task.value, "source", null)
-          parameters  = lookup(spark_python_task.value, "parameters", null)
-        }
-      }
-      dynamic "notebook_task" {
-        for_each = lookup(task.value, "notebook_task", null)
-
-        content {
-          notebook_path   = lookup(notebook_task.value, "notebook_path", null)
-          source          = lookup(notebook_task.value, "source", null)
-          base_parameters = lookup(notebook_task.value, "base_parameters", null)
-        }
-      }
-
-      dynamic "python_wheel_task" {
-        for_each = lookup(task.value, "python_wheel_task", null)
-
-        content {
-          entry_point      = lookup(python_wheel_task.value, "entry_point", null)
-          package_name     = lookup(python_wheel_task.value, "package_name", null)
-          parameters       = lookup(python_wheel_task.value, "parameters", null)
-          named_parameters = lookup(python_wheel_task.value, "named_parameters", null)
-        }
-      }
-
-      dynamic "dbt_task" {
-        for_each = lookup(task.value, "dbt_task", null)
-
-        content {
-          commands           = lookup(dbt_task.value, "commands", null)
-          project_directory  = lookup(dbt_task.value, "project_directory", null)
-          profiles_directory = lookup(dbt_task.value, "profiles_directory", null)
-          catalog            = lookup(dbt_task.value, "catalog", null)
-          schema             = lookup(dbt_task.value, "schema", null)
-          warehouse_id       = lookup(dbt_task.value, "warehouse_id", null)
-        }
-      }
-      dynamic "run_job_task" {
-        for_each = lookup(task.value, "run_job_task", null)
-
-        content {
-          job_id         = lookup(run_job_task.value, "job_id", null)
-          job_parameters = lookup(run_job_task.value, "job_parameters", null)
-        }
-      }
-
-      dynamic "sql_task" {
-        for_each = lookup(task.value, "sql_task", null)
-
-        content {
-          warehouse_id = lookup(sql_task.value, "warehouse_id", null)
-          parameters   = lookup(sql_task.value, "parameters", null)
-
-          dynamic "query" {
-            for_each = lookup(sql_task.value, "query", null)
-            content {
-              query_id = lookup(query.value, "query_id", null)
-            }
-          }
-          dynamic "dashboard" {
-            for_each = lookup(sql_task.value, "dashboard", null)
-
-            content {
-              dashboard_id        = lookup(dashboard.value, "dashboard_id", null)
-              custom_subject      = lookup(dashboard.value, "custom_subject", null)
-              pause_subscriptions = lookup(dashboard.value, "pause_subscriptions", null)
-
-              dynamic "subscriptions" {
-                for_each = lookup(dashboard.value, "subscriptions", null)
-
-                content {
-                  user_name      = lookup(subscriptions.value, "user_name", null)
-                  destination_id = lookup(subscriptions.value, "destination_id", null)
-                }
-              }
-            }
-          }
-          dynamic "alert" {
-            for_each = lookup(sql_task.value, "alert", null)
-
-            content {
-              alert_id            = lookup(alert.value, "alert_id", null)
-              pause_subscriptions = lookup(alert.value, "pause_subscriptions", null)
-
-              dynamic "subscriptions" {
-                for_each = lookup(alert.value, "subscriptions", null)
-
-                content {
-                  user_name      = lookup(subscriptions.value, "user_name", null)
-                  destination_id = lookup(subscriptions.value, "destination_id", null)
-                }
-              }
-            }
-          }
-          dynamic "file" {
-            for_each = lookup(sql_task.value, "file", null)
-
-            content {
-              path = lookup(file.value, "path", null)
-            }
-          }
         }
       }
     }
