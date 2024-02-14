@@ -307,6 +307,34 @@ resource "databricks_instance_pool" "new_instance_pools" {
   enable_elastic_disk                   = try(data.databricks_instance_pool.existing_pools[count.index].pool_info[0].enable_elastic_disk)
   preloaded_spark_versions              = try(data.databricks_instance_pool.existing_pools[count.index].pool_info[0].preloaded_spark_versions)
 
+  dynamic "gcp_attributes" {
+    for_each = try(data.databricks_instance_pool.existing_pools[count.index].pool_info[0].gcp_attributes, [])
+
+    content {
+      gcp_availability = lookup(gcp_attributes.value, "gcp_availability", null)
+      local_ssd_count  = lookup(gcp_attributes.value, "local_ssd_count", null)
+    }
+  }
+
+  dynamic "azure_attributes" {
+    for_each = try(data.databricks_instance_pool.existing_pools[count.index].pool_info[0].azure_attributes, [])
+
+    content {
+      availability       = lookup(azure_attributes.value, "availability", null)
+      spot_bid_max_price = lookup(azure_attributes.value, "spot_bid_max_price", null)
+    }
+  }
+
+  dynamic "aws_attributes" {
+    for_each = try(data.databricks_instance_pool.existing_pools[count.index].pool_info[0].aws_attributes, [])
+
+    content {
+      zone_id                = lookup(aws_attributes.value, "zone_id", null)
+      spot_bid_price_percent = lookup(aws_attributes.value, "spot_bid_price_percent", null)
+      availability           = lookup(aws_attributes.value, "availability", null)
+    }
+
+  }
   dynamic "disk_spec" {
     for_each = try(data.databricks_instance_pool.existing_pools[count.index].pool_info[0].disk_spec, [])
 
@@ -329,7 +357,15 @@ resource "databricks_instance_pool" "new_instance_pools" {
     for_each = try(data.databricks_instance_pool.existing_pools[count.index].pool_info[0].preloaded_docker_image, [])
 
     content {
-      url = lookup()
+      url = lookup(preloaded_docker_image.value, "url", null)
+      dynamic "basic_auth" {
+        for_each = lookup(preloaded_docker_image.value, "basic_auth", [])
+
+        content {
+          username = lookup(basic_auth.value, "username", null)
+          password = lookup(basic_auth.value, "password", null)
+        }
+      }
     }
   }
 }
