@@ -2,16 +2,7 @@ module "test-cgs" {
   source                       = "../"
   existing_resource_group_name = "marko"
   existing_instance_pools      = ["test-cgs-instance-pool", "test-cgs-instance-pool-2"]
-  existing_databricks_notebooks = [
-    {
-      path   = "/Users/marko.skendo@raiffeisen.al/test-cgs-notebook"
-      format = "SOURCE"
-    },
-    {
-      path   = "/Users/marko.skendo@raiffeisen.al/test-cgs-notebook-2"
-      format = "SOURCE"
-    }
-  ]
+  existing_databricks_notebooks = ["test-folder", "test-folder-2"]
   existing_databricks_folders = ["test-folder", "test-folder-2"]
 }
 

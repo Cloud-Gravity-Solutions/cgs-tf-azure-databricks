@@ -25,7 +25,7 @@ variable "existing_instance_pools" {
 # Variable to retrieve list of databricks notebooks
 
 variable "existing_databricks_notebooks" {
-  type        = list(map(string))
+  type        = list(string)
   description = "Name of existing databricks notebooks"
 
   validation {

@@ -45,17 +45,17 @@ data "databricks_instance_pool" "existing_pools" {
   name  = var.existing_instance_pools[count.index]
 }
 
-# Data for Databricks Notebooks
-
-data "databricks_notebook" "existing_notebooks" {
-  count  = length(var.existing_databricks_notebooks)
-  path   = var.existing_databricks_notebooks[count.index].path
-  format = var.existing_databricks_notebooks[count.index].format
-}
-
 # Data for databricks Wrokspace Folder
 
 data "databricks_directory" "existing_folders" {
   count = length(var.existing_databricks_folders)
   path  = join("/", ["", var.existing_databricks_folders[count.index]])
+}
+
+# Data for existing notebook paths
+
+data "databricks_notebook_paths" "existing_notebook_paths" {
+  count     = length(var.existing_databricks_notebooks) 
+  path      = join("/", ["", var.existing_databricks_notebooks[count.index]])
+  recursive = true
 }
