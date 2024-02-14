@@ -370,6 +370,20 @@ resource "databricks_instance_pool" "new_instance_pools" {
   }
 }
 
+# Directories that will be replicated
+
+resource "databricks_directory" "new_directories" {
+  count = length(var.existing_databricks_folders)
+  path  = data.databricks_directory.existing_folders[count.index].path
+}
+
+# Databricks Notebooks that will be replicated
+
+resource "databricks_notebook" "new_notebooks" {
+  count    = length(local.notebook_list) 
+  path     = lookup(data.databricks_notebook_paths.existing_notebook_paths[count.index].notebook_path_list, "path", "/")
+  language = lookup(data.databricks_notebook_paths.existing_notebook_paths[count.index].notebook_path_list, "language", null)
+}
 
 
 

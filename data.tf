@@ -6,6 +6,10 @@ terraform {
   }
 }
 
+# Data for databricks current user
+
+data "databricks_current_user" "current_user" {}
+
 # Data for Azure Databricks Clusters if it exists
 
 data "databricks_clusters" "all" {}
@@ -55,7 +59,8 @@ data "databricks_directory" "existing_folders" {
 # Data for existing notebook paths
 
 data "databricks_notebook_paths" "existing_notebook_paths" {
-  count     = length(var.existing_databricks_notebooks) 
+  count     = length(var.existing_databricks_notebooks)
   path      = join("/", ["", var.existing_databricks_notebooks[count.index]])
   recursive = true
 }
+

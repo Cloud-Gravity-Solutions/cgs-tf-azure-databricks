@@ -1,9 +1,9 @@
 module "test-cgs" {
-  source                       = "../"
-  existing_resource_group_name = "marko"
-  existing_instance_pools      = ["test-cgs-instance-pool", "test-cgs-instance-pool-2"]
+  source                        = "../"
+  existing_resource_group_name  = "marko"
+  existing_instance_pools       = ["test-cgs-instance-pool", "test-cgs-instance-pool-2"]
   existing_databricks_notebooks = ["test-folder", "test-folder-2"]
-  existing_databricks_folders = ["test-folder", "test-folder-2"]
+  existing_databricks_folders   = ["test-folder", "test-folder-2", "test-folder-2/testfolder"]
 }
 
 
