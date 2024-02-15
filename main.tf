@@ -385,5 +385,22 @@ resource "databricks_notebook" "new_notebooks" {
   language = lookup(data.databricks_notebook_paths.existing_notebook_paths[count.index].notebook_path_list, "language", null)
 }
 
+# Databricks SQL Warehouse that will be replicated
+
+resource "databricks_sql_endpoint" "sql_warehouse" {
+  count = length(tolist(data.databricks_sql_warehouses.all.ids))
+  name = "${data.databricks_sql_warehouse.sqlw[count.index].name}-replica"
+  cluster_size = data.databricks_sql_warehouse.sqlw[count.index].cluster_size
+  min_num_clusters = data.databricks_sql_warehouse.sqlw[count.index].min_num_clusters
+  max_num_clusters = data.databricks_sql_warehouse.sqlw[count.index].max_num_clusters
+  auto_stop_mins = data.databricks_sql_warehouse.sqlw[count.index].auto_stop_mins
+  spot_instance_policy = data.databricks_sql_warehouse.sqlw[count.index].spot_instance_policy
+  enable_photon = data.databricks_sql_warehouse.sqlw[count.index].enable_photon
+  warehouse_type = data.databricks_sql_warehouse.sqlw[count.index].warehouse_type
+  enable_serverless_compute = data.databricks_sql_warehouse.sqlw[count.index].enable_serverless_compute
+  channel {
+    name = length(data.databricks_sql_warehouse.sqlw[count.index].channel) > 0 ? data.databricks_sql_warehouse.sqlw[count.index].channel[0].name : "CHANNEL_NAME_CURRENT"
+  }
+}
 
 
