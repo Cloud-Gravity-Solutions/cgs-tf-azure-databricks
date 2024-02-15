@@ -2,6 +2,7 @@ locals {
   existing_databricks_service = "test-marko"
 
   cluster_ids_list = tolist(data.databricks_clusters.all.ids)
+  dbfs_file_path   = "dbfs:/FileStore/jars"
 
   naming_convetions = {
     westeurope  = "westeu"
@@ -21,6 +22,13 @@ locals {
         directories = replace(dirname(notebook_path.path), "\\", "/")
       }
     ]
+  ])
+
+  flattened_library_paths = flatten([
+    for library_path in data.databricks_dbfs_file_paths.existing_dbfs_file_paths.path_list : {
+      path      = library_path.path
+      file_size = library_path.file_size
+    }
   ])
 
   unique_directory_paths = distinct([

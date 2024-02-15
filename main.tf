@@ -19,6 +19,8 @@ resource "databricks_cluster" "new_cluster" {
   spark_conf                   = try(data.databricks_cluster.existing_cluster[count.index].cluster_info[0].spark_conf, null)
   custom_tags                  = try(data.databricks_cluster.existing_cluster[count.index].cluster_info[0].custom_tags, null)
 
+
+
   autoscale {
     min_workers = try(lookup(var.databricks_cluster_autoscale, "min_workers", null), null)
     max_workers = try(lookup(var.databricks_cluster_autoscale, "max_workers", null), null)
@@ -403,4 +405,20 @@ resource "databricks_sql_endpoint" "sql_warehouse" {
   }
 }
 
+# Databricks files to be replicated
 
+resource "databricks_dbfs_file" "this" {
+  count          = length(local.flattened_library_paths)
+  content_base64 = data.databricks_dbfs_file.existing_dbfs_files[count.index].content
+  path           = local.flattened_library_paths[count.index].path
+}
+
+
+
+# # Databricks Libraries that will be installed in each cluster
+
+# resource "databricks_library" "new_libraries" {
+#   count      = length(local.cluster_ids_list)
+#   cluster_id = data.databricks_cluster.existing_cluster[count.index].id
+#   whl        = data.databricks_dbfs_file.existing_dbfs_files[count.index].path
+# }
