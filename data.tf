@@ -49,11 +49,8 @@ data "databricks_instance_pool" "existing_pools" {
   name  = var.existing_instance_pools[count.index]
 }
 
-# Data for databricks Wrokspace Folder
-
-data "databricks_directory" "existing_folders" {
-  count = length(var.existing_databricks_folders)
-  path  = join("/", ["", var.existing_databricks_folders[count.index]])
+data "databricks_directory" "prod" {
+  path = "/test-folder-2"
 }
 
 # Data for existing notebook paths
@@ -64,12 +61,12 @@ data "databricks_notebook_paths" "existing_notebook_paths" {
   recursive = true
 }
 
-# Data for existing notebook paths
+# Data for existing sql warehouses
 
 data "databricks_sql_warehouses" "all" {
-  depends_on              = [data.azurerm_databricks_workspace.existing_databricks_service]
+  depends_on = [data.azurerm_databricks_workspace.existing_databricks_service]
 }
 data "databricks_sql_warehouse" "sqlw" {
   count = length(tolist(data.databricks_sql_warehouses.all.ids))
-  id = tolist(data.databricks_sql_warehouses.all.ids)[count.index]
+  id    = tolist(data.databricks_sql_warehouses.all.ids)[count.index]
 }
