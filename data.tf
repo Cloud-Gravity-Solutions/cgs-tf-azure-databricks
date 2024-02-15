@@ -64,3 +64,12 @@ data "databricks_notebook_paths" "existing_notebook_paths" {
   recursive = true
 }
 
+# Data for existing notebook paths
+
+data "databricks_sql_warehouses" "all" {
+  depends_on              = [data.azurerm_databricks_workspace.existing_databricks_service]
+}
+data "databricks_sql_warehouse" "sqlw" {
+  count = length(tolist(data.databricks_sql_warehouses.all.ids))
+  id = tolist(data.databricks_sql_warehouses.all.ids)[count.index]
+}
