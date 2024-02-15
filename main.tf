@@ -373,8 +373,8 @@ resource "databricks_instance_pool" "new_instance_pools" {
 # Directories that will be replicated
 
 resource "databricks_directory" "new_directories" {
-  # count = length(local.flattened_notebook_paths)
-  path  = data.databricks_directory.prod.path
+  count = length(local.unique_directory_paths)
+  path  = local.unique_directory_paths[count.index]
 }
 
 # Databricks Notebooks that will be replicated
