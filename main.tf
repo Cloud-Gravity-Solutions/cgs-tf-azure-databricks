@@ -24,6 +24,14 @@ resource "databricks_cluster" "new_cluster" {
     min_workers = try(lookup(var.databricks_cluster_autoscale, "min_workers", null), null)
     max_workers = try(lookup(var.databricks_cluster_autoscale, "max_workers", null), null)
   }
+
+  dynamic "library" {
+    for_each = local.cluster_library_combinations
+
+    content {
+      whl = lookup(library.value, "library_path", null)
+    }
+  }
 }
 
 # Databricks jobs to be replicated to the new region
@@ -44,7 +52,7 @@ resource "databricks_job" "new_jobs" {
       max_retries               = lookup(task.value, "max_retries", null)
       min_retry_interval_millis = lookup(task.value, "min_retry_interval_millis", null)
       timeout_seconds           = lookup(task.value, "timeout_seconds", null)
-      existing_cluster_id       = lookup(task.value, "existing_cluster_id", null)
+      existing_cluster_id       = local.cluster_library_combinations[count.index].cluster_id
 
       dynamic "notification_settings" {
         for_each = lookup(task.value, "notification_settings", [])
@@ -386,10 +394,12 @@ resource "databricks_directory" "new_directories" {
 # Databricks Notebooks that will be replicated
 
 resource "databricks_notebook" "new_notebooks" {
-  provider = databricks.dr_site
-  count    = length(local.flattened_notebook_paths)
-  path     = local.flattened_notebook_paths[count.index].path
-  language = local.flattened_notebook_paths[count.index].language
+  provider       = databricks.dr_site
+  count          = length(data.databricks_notebook.existing_notebooks)
+  content_base64 = data.databricks_notebook.existing_notebooks[count.index].content
+  path           = data.databricks_notebook.existing_notebooks[count.index].path
+  language       = data.databricks_notebook.existing_notebooks[count.index].language
+  format         = "SOURCE"
 
   depends_on = [databricks_directory.new_directories]
 }

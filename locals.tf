@@ -1,8 +1,11 @@
 locals {
   existing_databricks_service = "test-marko"
 
-  cluster_ids_list = tolist(data.databricks_clusters.all.ids)
-  dbfs_file_path   = "dbfs:/FileStore/jars"
+  cluster_ids_list    = tolist(data.databricks_clusters.all.ids)
+  cluster_ids_list_dr = tolist(data.databricks_clusters.dr_clusters.ids)
+
+  dbfs_file_path = "dbfs:/FileStore/jars"
+
 
   naming_convetions = {
     westeurope  = "westeu"
@@ -36,10 +39,10 @@ locals {
   ])
 
   cluster_library_combinations = flatten([
-    for cluster_id in data.databricks_clusters.all.ids : [
+    for cluster_id in data.databricks_clusters.dr_clusters.ids : [
       for library_path in local.flattened_library_paths : {
         cluster_id   = cluster_id
-        library_path = library_path.path
+        library_path = join("", ["dbfs:", library_path.path])
       }
     ]
   ])

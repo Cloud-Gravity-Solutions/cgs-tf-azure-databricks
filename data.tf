@@ -35,6 +35,21 @@ data "databricks_cluster" "existing_cluster" {
   cluster_id = local.cluster_ids_list[count.index]
 }
 
+
+# Data for Azure Databricks Clusters in DR Site
+
+data "databricks_clusters" "dr_clusters" {
+  provider = databricks.dr_site
+
+  depends_on = [databricks_cluster.new_cluster]
+}
+
+data "databricks_cluster" "existing_clusters_dr_site" {
+  provider   = databricks.dr_site
+  count      = length(local.cluster_ids_list)
+  cluster_id = local.cluster_ids_list_dr[count.index]
+}
+
 # Data to retirieve all databricks jobs from existing Databricks
 
 data "databricks_jobs" "existing_jobs" {
@@ -55,13 +70,20 @@ data "databricks_instance_pool" "existing_pools" {
   name     = var.existing_instance_pools[count.index]
 }
 
-# Data for existing notebook paths
+# Data for existing notebook paths and notebooks
 
 data "databricks_notebook_paths" "existing_notebook_paths" {
   provider  = databricks.primary_site
   count     = length(var.existing_databricks_notebooks)
   path      = join("/", ["", var.existing_databricks_notebooks[count.index]])
   recursive = true
+}
+
+data "databricks_notebook" "existing_notebooks" {
+  provider = databricks.primary_site
+  count    = length(local.flattened_notebook_paths)
+  path     = local.flattened_notebook_paths[count.index].path
+  format   = "SOURCE"
 }
 
 # Data for existing sql warehouses
