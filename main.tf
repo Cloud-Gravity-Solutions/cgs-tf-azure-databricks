@@ -3,7 +3,7 @@
 resource "databricks_cluster" "new_cluster" {
   provider                     = databricks.dr_site
   count                        = length(local.cluster_ids_list)
-  cluster_name                 = join("", [count.index, data.databricks_cluster.existing_cluster[count.index].cluster_info[0].cluster_name])
+  cluster_name                 = data.databricks_cluster.existing_cluster[count.index].cluster_info[0].cluster_name
   spark_version                = data.databricks_cluster.existing_cluster[count.index].cluster_info[0].spark_version
   node_type_id                 = try(data.databricks_cluster.existing_cluster[count.index].cluster_info[0].node_type_id, null)
   runtime_engine               = try(data.databricks_cluster.existing_cluster[count.index].cluster_info[0].runtime_engine, null)
