@@ -24,14 +24,6 @@ resource "databricks_cluster" "new_cluster" {
     min_workers = try(lookup(var.databricks_cluster_autoscale, "min_workers", null), null)
     max_workers = try(lookup(var.databricks_cluster_autoscale, "max_workers", null), null)
   }
-
-  dynamic "library" {
-    for_each = local.cluster_library_combinations
-
-    content {
-      whl = lookup(library.value, "library_path", null)
-    }
-  }
 }
 
 # Databricks jobs to be replicated to the new region

@@ -35,21 +35,6 @@ data "databricks_cluster" "existing_cluster" {
   cluster_id = local.cluster_ids_list[count.index]
 }
 
-
-# Data for Azure Databricks Clusters in DR Site
-
-data "databricks_clusters" "dr_clusters" {
-  provider = databricks.dr_site
-
-  depends_on = [databricks_cluster.new_cluster]
-}
-
-data "databricks_cluster" "existing_clusters_dr_site" {
-  provider   = databricks.dr_site
-  count      = length(local.cluster_ids_list)
-  cluster_id = local.cluster_ids_list_dr[count.index]
-}
-
 # Data to retirieve all databricks jobs from existing Databricks
 
 data "databricks_jobs" "existing_jobs" {
