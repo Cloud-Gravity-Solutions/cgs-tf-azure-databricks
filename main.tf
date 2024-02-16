@@ -377,9 +377,10 @@ resource "databricks_instance_pool" "new_instance_pools" {
 # Directories that will be replicated
 
 resource "databricks_directory" "new_directories" {
-  provider = databricks.dr_site
-  count    = length(local.unique_directory_paths)
-  path     = local.unique_directory_paths[count.index]
+  provider         = databricks.dr_site
+  count            = length(local.unique_directory_paths)
+  path             = local.unique_directory_paths[count.index]
+  delete_recursive = true
 }
 
 # Databricks Notebooks that will be replicated
@@ -389,6 +390,8 @@ resource "databricks_notebook" "new_notebooks" {
   count    = length(local.flattened_notebook_paths)
   path     = local.flattened_notebook_paths[count.index].path
   language = local.flattened_notebook_paths[count.index].language
+
+  depends_on = [databricks_directory.new_directories]
 }
 
 # Databricks SQL Warehouse that will be replicated
@@ -396,7 +399,7 @@ resource "databricks_notebook" "new_notebooks" {
 resource "databricks_sql_endpoint" "sql_warehouse" {
   provider                  = databricks.dr_site
   count                     = length(tolist(data.databricks_sql_warehouses.all.ids))
-  name                      = data.databricks_sql_warehouse.sqlw[count.index].name
+  name                      = "${data.databricks_sql_warehouse.sqlw[count.index].name}-replica"
   cluster_size              = data.databricks_sql_warehouse.sqlw[count.index].cluster_size
   min_num_clusters          = data.databricks_sql_warehouse.sqlw[count.index].min_num_clusters
   max_num_clusters          = data.databricks_sql_warehouse.sqlw[count.index].max_num_clusters
@@ -426,4 +429,6 @@ resource "databricks_library" "new_libraries" {
   count      = length(local.cluster_library_combinations)
   cluster_id = local.cluster_library_combinations[count.index].cluster_id
   whl        = local.cluster_library_combinations[count.index].library_path
+
+  depends_on = [databricks_dbfs_file.new_dbfs_files, databricks_cluster.new_cluster]
 }
