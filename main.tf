@@ -401,11 +401,11 @@ resource "databricks_notebook" "new_notebooks" {
 resource "databricks_sql_endpoint" "sql_warehouse" {
   provider                  = databricks.dr_site
   count                     = length(tolist(data.databricks_sql_warehouses.all.ids))
-  name                      = "${data.databricks_sql_warehouse.sqlw[count.index].name}-replica"
+  name                      = data.databricks_sql_warehouse.sqlw[count.index].name
   cluster_size              = data.databricks_sql_warehouse.sqlw[count.index].cluster_size
   min_num_clusters          = data.databricks_sql_warehouse.sqlw[count.index].min_num_clusters
   max_num_clusters          = data.databricks_sql_warehouse.sqlw[count.index].max_num_clusters
-  auto_stop_mins            = data.databricks_sql_warehouse.sqlw[count.index].auto_stop_mins
+  auto_stop_mins            = try(data.databricks_sql_warehouse.sqlw[count.index].auto_stop_mins, 0)
   spot_instance_policy      = data.databricks_sql_warehouse.sqlw[count.index].spot_instance_policy
   enable_photon             = data.databricks_sql_warehouse.sqlw[count.index].enable_photon
   warehouse_type            = data.databricks_sql_warehouse.sqlw[count.index].warehouse_type
