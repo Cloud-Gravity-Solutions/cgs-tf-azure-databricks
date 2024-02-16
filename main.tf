@@ -413,12 +413,10 @@ resource "databricks_dbfs_file" "new_dbfs_files" {
   path           = local.flattened_library_paths[count.index].path
 }
 
+# Databricks Libraries that will be installed in each cluster
 
-
-# # Databricks Libraries that will be installed in each cluster
-
-# resource "databricks_library" "new_libraries" {
-#   count      = length(local.cluster_ids_list)
-#   cluster_id = data.databricks_cluster.existing_cluster[count.index].id
-#   whl        = data.databricks_dbfs_file.existing_dbfs_files[count.index].path
-# }
+resource "databricks_library" "new_libraries" {
+  count      = length(local.cluster_library_combinations)
+  cluster_id = local.cluster_library_combinations[count.index].cluster_id
+  whl        = local.cluster_library_combinations[count.index].library_path
+}

@@ -12,27 +12,27 @@ variable "existing_resource_group_name" {
 
 # Variable for new resource group where new databricks exist
 
-# variable "new_db_resource_group_name" {
-#   type        = string
-#   description = "Name of existing resource group"
+variable "new_db_resource_group_name" {
+  type        = string
+  description = "Name of existing resource group"
 
-#   validation {
-#     condition     = var.new_db_resource_group_name != null
-#     error_message = "Please provide a value for the new_db_resource_group_name"
-#   }
-# }
+  validation {
+    condition     = var.new_db_resource_group_name != null
+    error_message = "Please provide a value for the new_db_resource_group_name"
+  }
+}
 
 # Variable for new resource group where new databricks exist
 
-# variable "db_workspaces" {
-#   type        = list(string)
-#   description = "Name of existing databricks services"
+variable "db_workspaces" {
+  type        = list(string)
+  description = "Name of existing databricks services"
 
-#   validation {
-#     condition     = var.db_workspaces != null
-#     error_message = "Please provide a value for the db_workspaces"
-#   }
-# }
+  validation {
+    condition     = var.db_workspaces != null
+    error_message = "Please provide a value for the db_workspaces"
+  }
+}
 
 # Variable to retrieve list of instance pools
 

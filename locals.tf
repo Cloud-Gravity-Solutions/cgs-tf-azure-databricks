@@ -34,4 +34,13 @@ locals {
   unique_directory_paths = distinct([
     for path in local.flattened_notebook_paths : path.directories
   ])
+
+  cluster_library_combinations = flatten([
+    for cluster_id in data.databricks_clusters.all.ids : [
+      for library_path in local.flattened_library_paths : {
+        cluster_id   = cluster_id
+        library_path = library_path.path
+      }
+    ]
+  ])
 }
