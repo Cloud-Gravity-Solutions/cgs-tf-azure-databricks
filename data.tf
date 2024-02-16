@@ -47,14 +47,6 @@ data "databricks_job" "existing_job" {
   job_id   = values(data.databricks_jobs.existing_jobs.ids)[count.index]
 }
 
-
-# # Data for Databricks Cluster policy
-
-# data "databricks_cluster_policy" "existing_cluster_policies" {
-#   count    = length(local.cluster_ids_list)
-#   name     = data.databricks_cluster.existing_cluster[count.index].cluster_info[count.index].policy_id
-# }
-
 # Data for Instance pools
 
 data "databricks_instance_pool" "existing_pools" {

@@ -20,8 +20,6 @@ resource "databricks_cluster" "new_cluster" {
   spark_conf                   = try(data.databricks_cluster.existing_cluster[count.index].cluster_info[0].spark_conf, null)
   custom_tags                  = try(data.databricks_cluster.existing_cluster[count.index].cluster_info[0].custom_tags, null)
 
-
-
   autoscale {
     min_workers = try(lookup(var.databricks_cluster_autoscale, "min_workers", null), null)
     max_workers = try(lookup(var.databricks_cluster_autoscale, "max_workers", null), null)
@@ -297,6 +295,7 @@ resource "databricks_job" "new_jobs" {
       }
     }
   }
+  depends_on = [databricks_cluster.new_cluster]
 }
 
 # Azure Databricks Instance Pools that will be replicated
@@ -397,7 +396,7 @@ resource "databricks_notebook" "new_notebooks" {
 resource "databricks_sql_endpoint" "sql_warehouse" {
   provider                  = databricks.dr_site
   count                     = length(tolist(data.databricks_sql_warehouses.all.ids))
-  name                      = "${data.databricks_sql_warehouse.sqlw[count.index].name}-replica"
+  name                      = data.databricks_sql_warehouse.sqlw[count.index].name
   cluster_size              = data.databricks_sql_warehouse.sqlw[count.index].cluster_size
   min_num_clusters          = data.databricks_sql_warehouse.sqlw[count.index].min_num_clusters
   max_num_clusters          = data.databricks_sql_warehouse.sqlw[count.index].max_num_clusters
