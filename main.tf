@@ -1,6 +1,7 @@
 # Databricks Cluster/Clusters that will be created in new region
 
 resource "databricks_cluster" "new_cluster" {
+  provider                     = databricks.dr_site
   count                        = length(local.cluster_ids_list)
   cluster_name                 = join("", [count.index, data.databricks_cluster.existing_cluster[count.index].cluster_info[0].cluster_name])
   spark_version                = data.databricks_cluster.existing_cluster[count.index].cluster_info[0].spark_version
@@ -30,8 +31,9 @@ resource "databricks_cluster" "new_cluster" {
 # Databricks jobs to be replicated to the new region
 
 resource "databricks_job" "new_jobs" {
+  provider          = databricks.dr_site
   count             = length(data.databricks_jobs.existing_jobs.ids)
-  name              = join("-", [count.index, "job"])
+  name              = data.databricks_job.existing_job[count.index].name
   control_run_state = try(data.databricks_job.existing_job[count.index].job_settings[0].settings[0].control_run_state, null)
   timeout_seconds   = try(data.databricks_job.existing_job[count.index].job_settings[0].settings[0].timeout_seconds, 15)
 
@@ -300,8 +302,9 @@ resource "databricks_job" "new_jobs" {
 # Azure Databricks Instance Pools that will be replicated
 
 resource "databricks_instance_pool" "new_instance_pools" {
+  provider                              = databricks.dr_site
   count                                 = length(var.existing_instance_pools)
-  instance_pool_name                    = join("-", [count.index, "ip"])
+  instance_pool_name                    = data.databricks_instance_pool.existing_pools[count.index].name
   idle_instance_autotermination_minutes = data.databricks_instance_pool.existing_pools[count.index].pool_info[0].idle_instance_autotermination_minutes
   node_type_id                          = data.databricks_instance_pool.existing_pools[count.index].pool_info[0].node_type_id
   min_idle_instances                    = try(data.databricks_instance_pool.existing_pools[count.index].pool_info[0].min_idle_instances)
@@ -375,13 +378,15 @@ resource "databricks_instance_pool" "new_instance_pools" {
 # Directories that will be replicated
 
 resource "databricks_directory" "new_directories" {
-  count = length(local.unique_directory_paths)
-  path  = local.unique_directory_paths[count.index]
+  provider = databricks.dr_site
+  count    = length(local.unique_directory_paths)
+  path     = local.unique_directory_paths[count.index]
 }
 
 # Databricks Notebooks that will be replicated
 
 resource "databricks_notebook" "new_notebooks" {
+  provider = databricks.dr_site
   count    = length(local.flattened_notebook_paths)
   path     = local.flattened_notebook_paths[count.index].path
   language = local.flattened_notebook_paths[count.index].language
@@ -390,6 +395,7 @@ resource "databricks_notebook" "new_notebooks" {
 # Databricks SQL Warehouse that will be replicated
 
 resource "databricks_sql_endpoint" "sql_warehouse" {
+  provider                  = databricks.dr_site
   count                     = length(tolist(data.databricks_sql_warehouses.all.ids))
   name                      = "${data.databricks_sql_warehouse.sqlw[count.index].name}-replica"
   cluster_size              = data.databricks_sql_warehouse.sqlw[count.index].cluster_size
@@ -408,6 +414,7 @@ resource "databricks_sql_endpoint" "sql_warehouse" {
 # Databricks files to be replicated
 
 resource "databricks_dbfs_file" "new_dbfs_files" {
+  provider       = databricks.dr_site
   count          = length(local.flattened_library_paths)
   content_base64 = data.databricks_dbfs_file.existing_dbfs_files[count.index].content
   path           = local.flattened_library_paths[count.index].path
@@ -416,6 +423,7 @@ resource "databricks_dbfs_file" "new_dbfs_files" {
 # Databricks Libraries that will be installed in each cluster
 
 resource "databricks_library" "new_libraries" {
+  provider   = databricks.dr_site
   count      = length(local.cluster_library_combinations)
   cluster_id = local.cluster_library_combinations[count.index].cluster_id
   whl        = local.cluster_library_combinations[count.index].library_path

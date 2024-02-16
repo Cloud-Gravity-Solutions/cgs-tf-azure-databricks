@@ -22,18 +22,6 @@ variable "new_db_resource_group_name" {
   }
 }
 
-# Variable for new resource group where new databricks exist
-
-variable "db_workspaces" {
-  type        = list(string)
-  description = "Name of existing databricks services"
-
-  validation {
-    condition     = var.db_workspaces != null
-    error_message = "Please provide a value for the db_workspaces"
-  }
-}
-
 # Variable to retrieve list of instance pools
 
 variable "existing_instance_pools" {
@@ -58,17 +46,41 @@ variable "existing_databricks_notebooks" {
   }
 }
 
-# Variable to get list of databricks folders
+# Variable for existing region
 
-# variable "existing_databricks_folders" {
-#   type        = list(string)
-#   description = "Name of existing databricks folders"
+variable "region_name" {
+  type        = string
+  description = "Name of region where resources will reside"
 
-#   validation {
-#     condition     = var.existing_databricks_folders != null
-#     error_message = "Please provide a value for the existing_databricks_folders"
-#   }
-# }
+  validation {
+    condition     = var.region_name != null
+    error_message = "Please provide a value for the region_name"
+  }
+}
+
+
+# Variables for existing workspaces
+
+variable "primary_db" {
+  type        = string
+  description = "Name of primary databricks"
+
+  validation {
+    condition     = var.primary_db != null
+    error_message = "Please provide a value for the primary_db"
+  }
+}
+
+variable "secondary_db" {
+  type        = string
+  description = "Name of secondary databricks"
+
+  validation {
+    condition     = var.secondary_db != null
+    error_message = "Please provide a value for the secondary_db"
+  }
+}
+
 
 variable "databricks_cluster_autoscale" {
   type        = any
