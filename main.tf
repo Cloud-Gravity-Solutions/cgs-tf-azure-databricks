@@ -407,7 +407,7 @@ resource "databricks_sql_endpoint" "sql_warehouse" {
 
 # Databricks files to be replicated
 
-resource "databricks_dbfs_file" "this" {
+resource "databricks_dbfs_file" "new_dbfs_files" {
   count          = length(local.flattened_library_paths)
   content_base64 = data.databricks_dbfs_file.existing_dbfs_files[count.index].content
   path           = local.flattened_library_paths[count.index].path
