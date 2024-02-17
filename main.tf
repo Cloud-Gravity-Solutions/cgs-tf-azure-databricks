@@ -34,9 +34,12 @@ resource "databricks_job" "new_jobs" {
   name              = data.databricks_job.existing_job[count.index].name
   control_run_state = try(data.databricks_job.existing_job[count.index].job_settings[0].settings[0].control_run_state, null)
   timeout_seconds   = try(data.databricks_job.existing_job[count.index].job_settings[0].settings[0].timeout_seconds, 15)
+  tags              = try(data.databricks_job.existing_job[count.index].job_settings[0].settings[0].tags, {})
 
   dynamic "task" {
+
     for_each = data.databricks_job.existing_job[count.index].job_settings[0].settings[0].task
+
     content {
       task_key                  = lookup(task.value, "task_key", null)
       run_if                    = lookup(task.value, "run_if", null)
@@ -45,6 +48,15 @@ resource "databricks_job" "new_jobs" {
       min_retry_interval_millis = lookup(task.value, "min_retry_interval_millis", null)
       timeout_seconds           = lookup(task.value, "timeout_seconds", null)
       existing_cluster_id       = local.cluster_library_combinations[count.index].cluster_id
+
+      dynamic "depends_on" {
+        for_each = lookup(task.value, "depends_on", [])
+
+        content {
+          task_key = lookup(depends_on.value, "task_key", null)
+          outcome  = lookup(depends_on.value, "outcome", null)
+        }
+      }
 
       dynamic "notification_settings" {
         for_each = lookup(task.value, "notification_settings", [])
@@ -372,6 +384,7 @@ resource "databricks_instance_pool" "new_instance_pools" {
       }
     }
   }
+
 }
 
 # Directories that will be replicated
@@ -434,3 +447,5 @@ resource "databricks_library" "new_libraries" {
 
   depends_on = [databricks_dbfs_file.new_dbfs_files, databricks_cluster.new_cluster]
 }
+
+
