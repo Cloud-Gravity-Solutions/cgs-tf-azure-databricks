@@ -425,7 +425,7 @@ resource "databricks_sql_endpoint" "sql_warehouse" {
   enable_serverless_compute = data.databricks_sql_warehouse.sqlw[count.index].enable_serverless_compute
   
   dynamic "channel" {
-    for_each = data.databricks_sql_warehouse.sqlw[count.index].channel
+    for_each = try(to_list(data.databricks_sql_warehouse.sqlw[count.index].channel), [])
 
     content {
       name = lookup(channel.value, "name", "CHANNEL_NAME_CURRENT")
