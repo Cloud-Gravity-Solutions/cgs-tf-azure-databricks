@@ -46,19 +46,6 @@ variable "existing_databricks_notebooks" {
   }
 }
 
-# Variable for existing region
-
-variable "region_name" {
-  type        = string
-  description = "Name of region where resources will reside"
-
-  validation {
-    condition     = var.region_name != null
-    error_message = "Please provide a value for the region_name"
-  }
-}
-
-
 # Variables for existing workspaces
 
 variable "primary_db" {

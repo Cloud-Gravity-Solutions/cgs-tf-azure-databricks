@@ -35,10 +35,10 @@ resource "databricks_job" "new_jobs" {
   control_run_state = try(data.databricks_job.existing_job[count.index].job_settings[0].settings[0].control_run_state, null)
   timeout_seconds   = try(data.databricks_job.existing_job[count.index].job_settings[0].settings[0].timeout_seconds, 15)
   tags              = try(data.databricks_job.existing_job[count.index].job_settings[0].settings[0].tags, {})
-
+  
   dynamic "task" {
 
-    for_each = toset(flatten([data.databricks_job.existing_job[count.index].job_settings[0].settings[0].task]))
+    for_each = try(data.databricks_job.existing_job[count.index].job_settings[0].settings[0].task, [])
 
     content {
       task_key                  = lookup(task.value, "task_key", null)
@@ -48,7 +48,7 @@ resource "databricks_job" "new_jobs" {
       min_retry_interval_millis = lookup(task.value, "min_retry_interval_millis", null)
       timeout_seconds           = lookup(task.value, "timeout_seconds", null)
       existing_cluster_id       = local.cluster_library_combinations[count.index].cluster_id
-
+      
       dynamic "depends_on" {
         for_each = lookup(task.value, "depends_on", [])
 
@@ -423,8 +423,13 @@ resource "databricks_sql_endpoint" "sql_warehouse" {
   enable_photon             = data.databricks_sql_warehouse.sqlw[count.index].enable_photon
   warehouse_type            = data.databricks_sql_warehouse.sqlw[count.index].warehouse_type
   enable_serverless_compute = data.databricks_sql_warehouse.sqlw[count.index].enable_serverless_compute
-  channel {
-    name = length(data.databricks_sql_warehouse.sqlw[count.index].channel) > 0 ? data.databricks_sql_warehouse.sqlw[count.index].channel[0].name : "CHANNEL_NAME_CURRENT"
+  
+  dynamic "channel" {
+    for_each = data.databricks_sql_warehouse.sqlw[count.index].channel
+
+    content {
+      name = lookup(channel.value, "name", "CHANNEL_NAME_CURRENT")
+    }
   }
 }
 
