@@ -38,7 +38,7 @@ resource "databricks_job" "new_jobs" {
 
   dynamic "task" {
 
-    for_each = data.databricks_job.existing_job[count.index].job_settings[0].settings[0].task
+    for_each = toset(flatten([data.databricks_job.existing_job[count.index].job_settings[0].settings[0].task]))
 
     content {
       task_key                  = lookup(task.value, "task_key", null)
