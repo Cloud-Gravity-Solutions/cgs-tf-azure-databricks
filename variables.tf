@@ -68,6 +68,17 @@ variable "secondary_db" {
   }
 }
 
+# Variable for existing clusters
+
+variable "existing_cluster_list" {
+  type        = list(string)
+  description = "Names of primary clusters"
+
+  validation {
+    condition     = var.existing_cluster_list != null
+    error_message = "Please provide a value for the existing_cluster_list"
+  }
+}
 
 variable "databricks_cluster_autoscale" {
   type        = any

@@ -1,7 +1,5 @@
 locals {
 
-  cluster_ids_list = tolist(data.databricks_clusters.all.ids)
-
   dbfs_file_path = "dbfs:/FileStore/jars"
 
 

@@ -2,13 +2,13 @@
 
 resource "databricks_cluster" "new_cluster" {
   provider                     = databricks.dr_site
-  count                        = length(local.cluster_ids_list)
+  count                        = length(var.existing_cluster_list)
   cluster_name                 = data.databricks_cluster.existing_cluster[count.index].cluster_info[0].cluster_name
   spark_version                = data.databricks_cluster.existing_cluster[count.index].cluster_info[0].spark_version
   node_type_id                 = try(data.databricks_cluster.existing_cluster[count.index].cluster_info[0].node_type_id, null)
   runtime_engine               = try(data.databricks_cluster.existing_cluster[count.index].cluster_info[0].runtime_engine, null)
   instance_pool_id             = can(data.databricks_cluster.existing_cluster[count.index].cluster_info[0].node_type_id) ? null : try(data.databricks_cluster.existing_cluster[count.index].cluster_info[0].instance_pool_id, null)
-  policy_id                    = try(data.databricks_cluster.existing_cluster[count.index].cluster_info[0].policy_id, null)
+  apply_policy_default_values  = true
   autotermination_minutes      = try(data.databricks_cluster.existing_cluster[count.index].cluster_info[0].autotermination_minutes, null)
   enable_elastic_disk          = try(data.databricks_cluster.existing_cluster[count.index].cluster_info[0].enable_elastic_disk, null)
   enable_local_disk_encryption = try(data.databricks_cluster.existing_cluster[count.index].cluster_info[0].enable_local_disk_encryption, null)
@@ -36,6 +36,17 @@ resource "databricks_job" "new_jobs" {
   timeout_seconds   = try(data.databricks_job.existing_job[count.index].job_settings[0].settings[0].timeout_seconds, 15)
   tags              = try(data.databricks_job.existing_job[count.index].job_settings[0].settings[0].tags, {})
   
+  dynamic "new_cluster" {
+        for_each = try(data.databricks_job.existing_job[count.index].job_settings[0].settings[0].new_cluster, [])
+        content {
+          node_type_id   = lookup(new_cluster.value, "node_type_id", "SingleNode")   
+          num_workers    = lookup(new_cluster.value, "node_type_id", null) == "SingleNode" ? 0 : (lookup(new_cluster.value, "num_workers", 1) > 0 ? lookup(new_cluster.value, "num_workers", 1) : 1)
+          spark_version  = lookup(new_cluster.value, "spark_version", null)
+          spark_env_vars = lookup(new_cluster.value, "spark_env_vars", null)
+          spark_conf     = lookup(new_cluster.value, "spark_conf", null)
+    }
+  }
+
   dynamic "task" {
 
     for_each = try(data.databricks_job.existing_job[count.index].job_settings[0].settings[0].task, [])
@@ -47,8 +58,20 @@ resource "databricks_job" "new_jobs" {
       max_retries               = lookup(task.value, "max_retries", null)
       min_retry_interval_millis = lookup(task.value, "min_retry_interval_millis", null)
       timeout_seconds           = lookup(task.value, "timeout_seconds", null)
-      existing_cluster_id       = local.cluster_library_combinations[count.index].cluster_id
+      existing_cluster_id       = lookup(task.value, "existing_cluster_id", null)
+      job_cluster_key           = lookup(task.value, "job_cluster_key", null)
       
+      dynamic "new_cluster" {
+        for_each = lookup(task.value, "new_cluster", [])
+        content {
+          node_type_id   = lookup(new_cluster.value, "node_type_id", "SingleNode")   
+          num_workers    = lookup(new_cluster.value, "node_type_id", null) == "SingleNode" ? 0 : (lookup(new_cluster.value, "num_workers", 1) > 0 ? lookup(new_cluster.value, "num_workers", 1) : 1)
+          spark_version  = lookup(new_cluster.value, "spark_version", null)
+          spark_env_vars = lookup(new_cluster.value, "spark_env_vars", null)
+          spark_conf     = lookup(new_cluster.value, "spark_conf", null)
+        }
+      }
+
       dynamic "depends_on" {
         for_each = lookup(task.value, "depends_on", [])
 
@@ -299,7 +322,8 @@ resource "databricks_job" "new_jobs" {
       dynamic "new_cluster" {
         for_each = lookup(job_cluster.value, "new_cluster", [])
         content {
-          num_workers    = lookup(new_cluster.value, "num_workers", null)
+          node_type_id   = lookup(new_cluster.value, "node_type_id", "SingleNode")
+          num_workers    = lookup(new_cluster.value, "node_type_id", null) == "SingleNode" ? 0 : (lookup(new_cluster.value, "num_workers", 1) > 0 ? lookup(new_cluster.value, "num_workers", 1) : 1)
           spark_version  = lookup(new_cluster.value, "spark_version", null)
           spark_env_vars = lookup(new_cluster.value, "spark_env_vars", null)
           spark_conf     = lookup(new_cluster.value, "spark_conf", null)
@@ -307,7 +331,6 @@ resource "databricks_job" "new_jobs" {
       }
     }
   }
-  depends_on = [databricks_cluster.new_cluster]
 }
 
 # Azure Databricks Instance Pools that will be replicated

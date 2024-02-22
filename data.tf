@@ -25,14 +25,10 @@ data "databricks_current_user" "current_user" {
 
 # Data for Azure Databricks Clusters if it exists
 
-data "databricks_clusters" "all" {
-  provider = databricks.primary_site
-}
-
 data "databricks_cluster" "existing_cluster" {
-  provider   = databricks.primary_site
-  count      = length(local.cluster_ids_list)
-  cluster_id = local.cluster_ids_list[count.index]
+  provider     = databricks.primary_site
+  count        = length(var.existing_cluster_list)
+  cluster_name = var.existing_cluster_list[count.index]
 }
 
 # Data to retirieve all databricks jobs from existing Databricks
@@ -97,3 +93,4 @@ data "databricks_dbfs_file" "existing_dbfs_files" {
   path            = local.flattened_library_paths[count.index].path
   limit_file_size = false
 }
+
