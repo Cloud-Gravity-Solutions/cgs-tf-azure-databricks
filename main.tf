@@ -37,13 +37,13 @@ resource "databricks_job" "new_jobs" {
   tags              = try(data.databricks_job.existing_job[count.index].job_settings[0].settings[0].tags, {})
   
   dynamic "new_cluster" {
-        for_each = try(data.databricks_job.existing_job[count.index].job_settings[0].settings[0].new_cluster, [])
-        content {
-          node_type_id   = lookup(new_cluster.value, "node_type_id", "SingleNode")   
-          num_workers    = lookup(new_cluster.value, "node_type_id", null) == "SingleNode" ? 0 : (lookup(new_cluster.value, "num_workers", 1) > 0 ? lookup(new_cluster.value, "num_workers", 1) : 1)
-          spark_version  = lookup(new_cluster.value, "spark_version", null)
-          spark_env_vars = lookup(new_cluster.value, "spark_env_vars", null)
-          spark_conf     = lookup(new_cluster.value, "spark_conf", null)
+    for_each = try(data.databricks_job.existing_job[count.index].job_settings[0].settings[0].new_cluster, [])
+    content {
+      node_type_id   = try(lookup(new_cluster.value, "node_type_id", "SingleNode"), "SingleNode")
+      num_workers    = lookup(new_cluster.value, "node_type_id", "SingleNode") == "SingleNode" ? 0 : try(lookup(new_cluster.value, "num_workers", 1), 1)
+      spark_version  = lookup(new_cluster.value, "spark_version", null)
+      spark_env_vars = lookup(new_cluster.value, "spark_env_vars", null)
+      spark_conf     = lookup(new_cluster.value, "spark_conf", null)
     }
   }
 
@@ -64,8 +64,8 @@ resource "databricks_job" "new_jobs" {
       dynamic "new_cluster" {
         for_each = lookup(task.value, "new_cluster", [])
         content {
-          node_type_id   = lookup(new_cluster.value, "node_type_id", "SingleNode")   
-          num_workers    = lookup(new_cluster.value, "node_type_id", null) == "SingleNode" ? 0 : (lookup(new_cluster.value, "num_workers", 1) > 0 ? lookup(new_cluster.value, "num_workers", 1) : 1)
+          node_type_id   = try(lookup(new_cluster.value, "node_type_id", "SingleNode"), "SingleNode")
+          num_workers    = lookup(new_cluster.value, "node_type_id", "SingleNode") == "SingleNode" ? 0 : try(lookup(new_cluster.value, "num_workers", 1), 1)
           spark_version  = lookup(new_cluster.value, "spark_version", null)
           spark_env_vars = lookup(new_cluster.value, "spark_env_vars", null)
           spark_conf     = lookup(new_cluster.value, "spark_conf", null)
@@ -320,10 +320,10 @@ resource "databricks_job" "new_jobs" {
       job_cluster_key = lookup(job_cluster.value, "job_cluster_key", null)
 
       dynamic "new_cluster" {
-        for_each = lookup(job_cluster.value, "new_cluster", [])
+        for_each = try(data.databricks_job.existing_job[count.index].job_settings[0].settings[0].new_cluster, [])
         content {
-          node_type_id   = lookup(new_cluster.value, "node_type_id", "SingleNode")
-          num_workers    = lookup(new_cluster.value, "node_type_id", null) == "SingleNode" ? 0 : (lookup(new_cluster.value, "num_workers", 1) > 0 ? lookup(new_cluster.value, "num_workers", 1) : 1)
+          node_type_id   = try(lookup(new_cluster.value, "node_type_id", "SingleNode"), "SingleNode")
+          num_workers    = lookup(new_cluster.value, "node_type_id", "SingleNode") == "SingleNode" ? 0 : try(lookup(new_cluster.value, "num_workers", 1), 1)
           spark_version  = lookup(new_cluster.value, "spark_version", null)
           spark_env_vars = lookup(new_cluster.value, "spark_env_vars", null)
           spark_conf     = lookup(new_cluster.value, "spark_conf", null)
