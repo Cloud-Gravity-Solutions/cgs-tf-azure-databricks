@@ -2,7 +2,6 @@ locals {
 
   dbfs_file_path = "dbfs:/FileStore/jars"
 
-
   naming_convetions = {
     westeurope  = "westeu"
     northeurope = "northeu"
