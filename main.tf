@@ -37,7 +37,7 @@ resource "databricks_job" "new_jobs" {
   dynamic "new_cluster" {
     for_each = try(data.databricks_job.existing_job[count.index].job_settings[0].settings[0].new_cluster, [])
     content {
-      instance_pool_id = lookup(new_cluster.value, "instance_pool_id", null)
+      instance_pool_id = can(new_cluster.value.instance_pool_id) && contains(keys(local.existing_to_new_ip_ids), lookup(new_cluster.value, "instance_pool_id", "")) ? local.existing_to_new_ip_ids[lookup(new_cluster.value, "instance_pool_id", "")] : null
       node_type_id     = lookup(new_cluster.value, "node_type_id", "Standard_DS3_v2")
       spark_version    = lookup(new_cluster.value, "spark_version", null)
       spark_env_vars   = lookup(new_cluster.value, "spark_env_vars", null)
@@ -67,10 +67,18 @@ resource "databricks_job" "new_jobs" {
       existing_cluster_id       = lookup(task.value, "existing_cluster_id", null)
       job_cluster_key           = lookup(task.value, "job_cluster_key", null)
 
+      dynamic "library" {
+        for_each = toset(local.dbfs_list)
+
+        content {
+          whl = library.value
+        }
+      }
+
       dynamic "new_cluster" {
         for_each = lookup(task.value, "new_cluster", [])
         content {
-          instance_pool_id = lookup(new_cluster.value, "instance_pool_id", null)
+          instance_pool_id = can(new_cluster.value.instance_pool_id) && contains(keys(local.existing_to_new_ip_ids), lookup(new_cluster.value, "instance_pool_id", "")) ? local.existing_to_new_ip_ids[lookup(new_cluster.value, "instance_pool_id", "")] : null
           node_type_id     = lookup(new_cluster.value, "node_type_id", "Standard_DS3_v2")
           spark_version    = lookup(new_cluster.value, "spark_version", null)
           spark_env_vars   = lookup(new_cluster.value, "spark_env_vars", null)
@@ -336,7 +344,7 @@ resource "databricks_job" "new_jobs" {
       dynamic "new_cluster" {
         for_each = lookup(job_cluster.value, "new_cluster", [])
         content {
-          instance_pool_id = lookup(new_cluster.value, "instance_pool_id", null)
+          instance_pool_id = can(new_cluster.value.instance_pool_id) && contains(keys(local.existing_to_new_ip_ids), lookup(new_cluster.value, "instance_pool_id", "")) ? local.existing_to_new_ip_ids[lookup(new_cluster.value, "instance_pool_id", "")] : null
           node_type_id     = lookup(new_cluster.value, "node_type_id", "Standard_DS3_v2")
           spark_version    = lookup(new_cluster.value, "spark_version", null)
           spark_env_vars   = lookup(new_cluster.value, "spark_env_vars", null)
@@ -391,7 +399,7 @@ resource "databricks_sql_endpoint" "sql_warehouse" {
   enable_photon             = data.databricks_sql_warehouse.sqlw[count.index].enable_photon
   warehouse_type            = data.databricks_sql_warehouse.sqlw[count.index].warehouse_type
   enable_serverless_compute = data.databricks_sql_warehouse.sqlw[count.index].enable_serverless_compute
-
+  
   dynamic "channel" {
     for_each = try(to_list(data.databricks_sql_warehouse.sqlw[count.index].channel), [])
 
@@ -401,24 +409,80 @@ resource "databricks_sql_endpoint" "sql_warehouse" {
   }
 }
 
-# Databricks files to be replicated
+resource "databricks_instance_pool" "new_instance_pools" {
+  provider                              = databricks.dr_site
+  count                                 = length(var.existing_instance_pools)
+  instance_pool_name                    = data.databricks_instance_pool.existing_pools[count.index].name
+  idle_instance_autotermination_minutes = data.databricks_instance_pool.existing_pools[count.index].pool_info[0].idle_instance_autotermination_minutes
+  node_type_id                          = data.databricks_instance_pool.existing_pools[count.index].pool_info[0].node_type_id
+  min_idle_instances                    = try(data.databricks_instance_pool.existing_pools[count.index].pool_info[0].min_idle_instances)
+  max_capacity                          = try(data.databricks_instance_pool.existing_pools[count.index].pool_info[0].max_capacity)
+  enable_elastic_disk                   = try(data.databricks_instance_pool.existing_pools[count.index].pool_info[0].enable_elastic_disk)
+  preloaded_spark_versions              = try(data.databricks_instance_pool.existing_pools[count.index].pool_info[0].preloaded_spark_versions)
 
-resource "databricks_dbfs_file" "new_dbfs_files" {
-  provider       = databricks.dr_site
-  count          = length(local.flattened_library_paths)
-  content_base64 = data.databricks_dbfs_file.existing_dbfs_files[count.index].content
-  path           = local.flattened_library_paths[count.index].path
+  dynamic "gcp_attributes" {
+    for_each = try(data.databricks_instance_pool.existing_pools[count.index].pool_info[0].gcp_attributes, [])
+
+    content {
+      gcp_availability = lookup(gcp_attributes.value, "gcp_availability", null)
+      local_ssd_count  = lookup(gcp_attributes.value, "local_ssd_count", null)
+    }
+  }
+
+  dynamic "azure_attributes" {
+    for_each = try(data.databricks_instance_pool.existing_pools[count.index].pool_info[0].azure_attributes, [])
+
+    content {
+      availability       = lookup(azure_attributes.value, "availability", null)
+      spot_bid_max_price = lookup(azure_attributes.value, "spot_bid_max_price", null)
+    }
+  }
+
+  dynamic "aws_attributes" {
+    for_each = try(data.databricks_instance_pool.existing_pools[count.index].pool_info[0].aws_attributes, [])
+
+    content {
+      zone_id                = lookup(aws_attributes.value, "zone_id", null)
+      spot_bid_price_percent = lookup(aws_attributes.value, "spot_bid_price_percent", null)
+      availability           = lookup(aws_attributes.value, "availability", null)
+    }
+
+  }
+  dynamic "disk_spec" {
+    for_each = try(data.databricks_instance_pool.existing_pools[count.index].pool_info[0].disk_spec, [])
+
+    content {
+      disk_count = lookup(disk_spec.value, "disk_count", null)
+      disk_size  = lookup(disk_spec.value, "disk_size", null)
+
+      dynamic "disk_type" {
+        for_each = lookup(disk_spec.value, "disk_type", [])
+
+        content {
+          ebs_volume_type        = lookup(disk_type.value, "ebs_volume_type", null)
+          azure_disk_volume_type = lookup(disk_type.value, "azure_disk_volume_type", null)
+        }
+      }
+    }
+  }
+
+  dynamic "preloaded_docker_image" {
+    for_each = try(data.databricks_instance_pool.existing_pools[count.index].pool_info[0].preloaded_docker_image, [])
+
+    content {
+      url = lookup(preloaded_docker_image.value, "url", null)
+      dynamic "basic_auth" {
+        for_each = lookup(preloaded_docker_image.value, "basic_auth", [])
+
+        content {
+          username = lookup(basic_auth.value, "username", null)
+          password = lookup(basic_auth.value, "password", null)
+        }
+      }
+    }
+  }
+
 }
 
-# Databricks Libraries that will be installed in each cluster
-
-resource "databricks_library" "new_libraries" {
-  provider   = databricks.dr_site
-  count      = length(local.cluster_library_combinations)
-  cluster_id = local.cluster_library_combinations[count.index].cluster_id
-  whl        = local.cluster_library_combinations[count.index].library_path
-
-  depends_on = [databricks_dbfs_file.new_dbfs_files, databricks_cluster.new_cluster]
-}
 
 

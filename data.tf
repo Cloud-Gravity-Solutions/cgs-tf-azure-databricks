@@ -78,19 +78,3 @@ data "databricks_sql_warehouse" "sqlw" {
   count    = length(tolist(data.databricks_sql_warehouses.all.ids))
   id       = tolist(data.databricks_sql_warehouses.all.ids)[count.index]
 }
-
-# Data for listing existing libraries stored in file system
-
-data "databricks_dbfs_file_paths" "existing_dbfs_file_paths" {
-  provider  = databricks.primary_site
-  path      = local.dbfs_file_path
-  recursive = true
-}
-
-data "databricks_dbfs_file" "existing_dbfs_files" {
-  provider        = databricks.primary_site
-  count           = length(local.flattened_library_paths)
-  path            = local.flattened_library_paths[count.index].path
-  limit_file_size = false
-}
-
