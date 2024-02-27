@@ -79,7 +79,7 @@ resource "databricks_job" "new_jobs" {
         for_each = lookup(task.value, "new_cluster", [])
         content {
           instance_pool_id = can(new_cluster.value.instance_pool_id) && contains(keys(local.existing_to_new_ip_ids), lookup(new_cluster.value, "instance_pool_id", "")) ? local.existing_to_new_ip_ids[lookup(new_cluster.value, "instance_pool_id", "")] : null
-          node_type_id     = lookup(new_cluster.value, "node_type_id", "Standard_DS3_v2")
+          node_type_id     = can(new_cluster.value.node_type_id) && new_cluster.value.node_type_id != "" ? new_cluster.value.node_type_id : "Standard_DS3_v2"
           spark_version    = lookup(new_cluster.value, "spark_version", null)
           spark_env_vars   = lookup(new_cluster.value, "spark_env_vars", null)
           spark_conf       = lookup(new_cluster.value, "spark_conf", null)
