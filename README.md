@@ -19,19 +19,13 @@ This Terraform module provisions the same existing databricks workspace in a new
 3- Azure Databricks Folders
 
 
-4- Azure Databricks Libraries
+4- Azure Databricks Instance Pools
 
 
-5- Azure Databricks DBFS Files
+5- Azure Databricks Jobs & Tasks
 
 
-6- Azure Databricks Instance Pools
-
-
-7- Azure Databricks Jobs & Tasks
-
-
-8- Azure Databricks SQL Warehouses
+6- Azure Databricks SQL Warehouses
 
 
 ## How to Use
@@ -46,7 +40,7 @@ This Terraform module provisions the same existing databricks workspace in a new
 | `secondary_db`                 | Name of the secondary databricks workspace.        | `string`     | n/a     | yes      |
 | `existing_instance_pools`      | List of existing instance pools to replicate.      | `list(string)` | n/a   | yes      |
 | `existing_databricks_notebooks`| List of existing databricks notebooks to replicate.| `list(string)` | n/a   | yes      |
-| `region_name`                  | Region where the resources will be replicated.     | `string`     | n/a     | yes      |
+| `existing_cluster_list`| List of existing databricks clusters to replicate.| `list(string)` | n/a   | yes      |
 
 ### Example with ALL Variables:
 
@@ -59,5 +53,5 @@ module "databricks-rep" {
   existing_resource_group_name  = "test"
   existing_instance_pools       =["test-cgs-instance-pool""test-cgs-instance-pool-2"]
   existing_databricks_notebooks = ["test-folder", "test-folder-2", "test-cgs"]
-  region_name                   = "westeurope"
+  existing_cluster_list         = ["Test-Cluster"]
 }
